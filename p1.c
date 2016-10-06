@@ -8,7 +8,8 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
-
+#include "util.h"
+#include "process.h"
 
 void simulate(int n, int m, int t_cs);
 void simulate_fcfs(int n, int m, int t_cs);
@@ -17,6 +18,11 @@ void simulate_rr(int n, int m, int t_cs, int t_slice);
 
 
 int main(int argc, char *argv[]) {
+	
+	FILE *f;
+	f = open_file(argv); 
+
+	parse(f);
 
 	return EXIT_SUCCESS;
 }
