@@ -52,11 +52,8 @@ process parse(FILE *f) {
 					buffer[buffer_c] = c;
 					buffer_c += 1;
 				}
-				printf("%c", c);				
 		}
 	}
-	printf("\n");
-	print_process(p);
 	return p;
 }
 

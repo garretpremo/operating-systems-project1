@@ -22,7 +22,8 @@ int main(int argc, char *argv[]) {
 	FILE *f;
 	f = open_file(argv); 
 
-	parse(f);
+	process p = parse(f);
+	print_process(p);
 
 	return EXIT_SUCCESS;
 }
