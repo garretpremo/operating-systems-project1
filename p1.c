@@ -4,10 +4,7 @@
 		Process Simulation Framework
 
 
-	
-
 	contributors: Garret Premo, Morgan Larkin
-
 */
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,7 +32,7 @@ int main(int argc, char *argv[]) {
 	int m: number of processors available within the CPU
 			(default: 1)
 
-	time_t t_cs: the time (in milliseconds) that it takes
+	int t_cs: the time (in milliseconds) that it takes
 			to perform a context switch. Context switches
 			occur each time a process leaves the CPU and is
 			replaced by another process.
