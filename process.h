@@ -28,4 +28,6 @@ int compare_process_by_arrival(const void * a, const void * b);
 
 int compare_process_by_id(const void * a, const void * b);
 
+int compare_process_by_burst(const void * a, const void * b);
+
 #endif //PROCESS_H_
