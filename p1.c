@@ -142,7 +142,7 @@ process *queue_sjf(process *pl) {
 		queue.processes[i] = pl[i];
 	}
 
-	qsort(queue.processes, n, sizeof(process), compare_process_by_arrival);
+	qsort(queue.processes, n, sizeof(process), compare_process_by_burst);
 	printf("|--- POST SORT ---------------\n");
 
 	return queue.processes;

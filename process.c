@@ -28,3 +28,8 @@ int compare_process_by_id(const void * a, const void * b) {
 	if((*(process*)a).process_id <= (*(process*)b).process_id) return -1;
 	else return 1;
 }
+
+int compare_process_by_burst(const void * a, const void * b) {
+	if((*(process*)a).arrival_time + (*(process*)a).cpu_burst_time <= (*(process*)b).arrival_time + (*(process*)b).cpu_burst_time) return -1;
+	else return 1;
+}
