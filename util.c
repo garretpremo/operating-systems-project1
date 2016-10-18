@@ -54,6 +54,7 @@ void parse(FILE *f, p_list *proclist) {
 					max_procs = max_procs * 2;
 					proclist->processes = (process *)realloc(proclist->processes, max_procs*sizeof(process));
 				}
+				p.arrived = false;
 				proclist->processes[proclist->size] = p;
 				proclist->size += 1;
 				memset(&buffer[0], '\0', sizeof(buffer));
@@ -113,7 +114,7 @@ void check_args(char *argv[]) {
 	}
 }
 
-void print_op(int t, char id, char op[], process *ps, int ready) {
+void print_op(int t, process p, char op[], process *ps, int ready) {
 	// printf("%d\n", ready);
 	char prnt[(ready*2+1)];
 	int i;
@@ -124,17 +125,18 @@ void print_op(int t, char id, char op[], process *ps, int ready) {
 	prnt[ready*2] = '\0';
 
 	if(strcmp(op, "scpu") == 0){
-		printf("time %dms: Process %c starts using the CPU", t, id);
+		printf("time %dms: Process %c started using the CPU", t, p.process_id);
 	} else if (strcmp(op, "fcpu") == 0) {
-		printf("time %dms: Process %c finishes using the CPU", t, id);
+		printf("time %dms: Process %c completed a CPU burst; %d to go", t, p.process_id);
 	} else if (strcmp(op, "sio") == 0) {
-		printf("time %dms: Process %c starts performing I/O", t, id);
+		printf("time %dms: Process %c blocked on I/O until time %dms", t, p.process_id,
+												t + p.io_time);
 	} else if (strcmp(op, "fio") == 0) {
-		printf("time %dms: Process %c finishes performing I/O", t, id);
+		printf("time %dms: Process %c completed I/O", t, p.process_id);
 	} else if (strcmp(op, "rdy") == 0) {
-		printf("time %dms: Process %c arrived", t, id);
+		printf("time %dms: Process %c arrived", t, p.process_id);
 	} else if (strcmp(op, "end") == 0) {
-		printf("time %dms: Process %c terminates", t, id);
+		printf("time %dms: Process %c terminated", t, p.process_id);
 	}
 	if(ready == 0) {
 		printf(" [Q empty]\n");

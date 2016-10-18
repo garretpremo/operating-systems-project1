@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>			
+#include <stdbool.h>
+#include <string.h>		
 #include "process.h"
 
 void print_process_list(process *pl, int size) {

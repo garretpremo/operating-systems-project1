@@ -19,6 +19,7 @@ struct process {
 	int io_time;
 	int wait_time;
 	int turnaround_time;
+	bool arrived;
 }; 
 
 struct io_block {

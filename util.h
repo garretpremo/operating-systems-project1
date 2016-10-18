@@ -10,7 +10,7 @@ FILE *open_file(char *argv[]);
 
 void check_args(char *argv[]);
 
-void print_op(int t, char id, char op[], process *ps, int ready);
+void print_op(int t, process p, char op[], process *ps, int ready);
 
 bool in_array(process p, process *ps, int size);
 

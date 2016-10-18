@@ -15,10 +15,10 @@
 
 /* function definitions */
 void simulate(p_list *process_list);
-process *queue_fcfs(process *pl);
+void queue_fcfs(process *pl, process *queue);
 process *queue_sjf(process *pl);
 process *queue_rr(process *pl);
-void simulate_fcfs(process *queue);
+void simulate_fcfs(process *pl);
 void check_finish_io(int time, io_block *blocks, int *num_blocks);
 void delete_first_process(process *processes);
 void delete_first_block(io_block *blocks, int *num_blocks);
@@ -86,16 +86,22 @@ int main(int argc, char *argv[]) {
 
 */
 void simulate(p_list *process_list) {
+	printf("%d\n", n);
 	printf("simulate(): begin simulate\n");
 	process *queue;
 
 	/* a for algorithm */
 	int a;
 	for(a = 0; a < 3; a++) {
+		// copy process list into a ready queue
+		queue = (process *)calloc(n, sizeof(process));
+		memcpy(queue, process_list->processes, n*sizeof(process));
+
 		if(a != 0) { continue; }
 		switch(a) {
 			case 0: 
-				queue = queue_fcfs(process_list->processes);
+				// sort ready queue by arrival time
+				qsort(queue, n, sizeof(process), compare_process_by_arrival);
 				simulate_fcfs(queue);
 				break;
 			case 1:
@@ -122,16 +128,8 @@ void simulate(p_list *process_list) {
 /*
 	Create First-Come-First-Serve (FCFS) queue
 */
-process *queue_fcfs(process *pl) {
-	p_list queue;
-	queue.processes = (process *)calloc(n, sizeof(process));
-	int i;
-	for(i = 0; i < n; i++) {
-		queue.processes[i] = pl[i];
-	}
-	qsort(queue.processes, n, sizeof(process), compare_process_by_arrival);
-
-	return queue.processes;
+void queue_fcfs(process *pl, process *queue) {
+	memcpy(queue, pl, sizeof(process));
 }
 
 /*
@@ -167,20 +165,23 @@ process *queue_rr(process *pl) {
 /*
 	Simulate FCFS algorithm
 */
-void simulate_fcfs(process *queue) {
+void simulate_fcfs(process *pl) {
 	// bool done = false;
 	int time = 0;
 	// int next_end_io_time = 0;
 	int i = 0;
-	int j;
+
+	process *queue = (process *)calloc(n, sizeof(process));
+	memcpy(queue, pl, n*sizeof(process));
+	print_process_list(queue, n);
 
 	// process ready_queue[n];
 	int ready = 0;
 	// process queue[n];
 	// int queue_size = 0;
 
-	io_block blocks[n];
-	int num_blocks = 0;
+	// io_block blocks[n];
+	// int num_blocks = 0;
 
 
 
@@ -193,7 +194,7 @@ void simulate_fcfs(process *queue) {
 
 
 
-		io_block b;
+		// io_block b;
 		process p = queue[0];
 		
 		if(p.arrival_time > time)
@@ -223,6 +224,7 @@ void simulate_fcfs(process *queue) {
 		// if yes, stick onto end of queue.
 
 		queue[0].num_bursts -= 1;
+		p.num_bursts -= 1;
 		if(ready != 0)
 			ready -= 1;
 		if(queue[0].num_bursts > 0) {
@@ -235,17 +237,22 @@ void simulate_fcfs(process *queue) {
 		}
 
 		// start process
-		print_op(time, p.process_id, "scpu", queue, ready);
+		print_op(time, p, "scpu", queue, ready);
 		time += p.cpu_burst_time;
 
 		check_process_arrived(time, queue, &ready);
 
-		// finish burst
-		print_op(time, p.process_id, "fcpu", queue, ready);
+		if(p.num_bursts == 0) {
+			print_op(time, p, "end", queue, ready);
+		} else {
+			
+			// finish burst
+			print_op(time, p, "fcpu", queue, ready);
 
-		// start io		
-		print_op(time, p.process_id, "sio", queue, ready);
+			// start io		
+			print_op(time, p, "sio", queue, ready);
 
+		}
 
 		// // keep track of block time
 		// if(p.io_time > 0) {
@@ -286,6 +293,7 @@ void simulate_fcfs(process *queue) {
 		// }
 		i++;
 	}
+	free(queue);
 	printf("time %dms: Simulator finished for %s\n", time, FCFS);
 }
 
@@ -304,7 +312,12 @@ void check_process_arrived(int time, process *queue, int *ready) {
 	for(i = 0; i < n; i++) {
 		if(queue[i].arrival_time <= time && !in_array(queue[i], queue, *ready)) {
 			*ready += 1;
-			print_op(queue[i].arrival_time, queue[i].process_id, "rdy", queue, *ready);
+			if(!queue[i].arrived) {
+				queue[i].arrived = true;
+				print_op(queue[i].arrival_time, queue[i], "rdy", queue, *ready);
+			} else {
+				print_op(queue[i].arrival_time, queue[i], "fio", queue, *ready);
+			}
 		} else {
 			break;
 		}
