@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <string.h>			
 #include "process.h"
 
 void print_process_list(process *pl, int size) {
@@ -11,12 +11,16 @@ void print_process_list(process *pl, int size) {
 }
 
 void print_process(process p) {
-	printf("|--- PROCESS -----------------\n");
-	printf("|\tprocess_id: %c\n", p.process_id);
-	printf("|\tarrival_time: %d\n", p.arrival_time);
-	printf("|\tcpu_burst_time: %d\n", p.cpu_burst_time);
-	printf("|\tnum_bursts: %d\n", p.num_bursts);
-	printf("|\tio_time: %d\n", p.io_time);	
+	// A|0|168|5|600
+	printf("%c|%d|%d|%d|%d\n", p.process_id, p.arrival_time, p.cpu_burst_time, p.num_bursts, p.io_time);
+}
+
+void queue_tostr(process *p, char *str, int size) {
+	int i;
+	for(i = 0; i < size; i++) {
+		str[2*i] = ' ';
+		str[2*i+1] = p[i].process_id; 
+	}
 }
 
 int compare_process_by_arrival(const void * a, const void * b) {
@@ -31,5 +35,10 @@ int compare_process_by_id(const void * a, const void * b) {
 
 int compare_process_by_burst(const void * a, const void * b) {
 	if((*(process*)a).arrival_time + (*(process*)a).cpu_burst_time <= (*(process*)b).arrival_time + (*(process*)b).cpu_burst_time) return -1;
+	else return 1;
+}
+
+int compare_io_block(const void * a, const void * b) {
+	if((*(io_block*)a).time_unblocked <= (*(io_block*)b).time_unblocked) return -1;
 	else return 1;
 }

@@ -10,6 +10,8 @@ FILE *open_file(char *argv[]);
 
 void check_args(char *argv[]);
 
-void print_op(int t, char id, char op[]);
+void print_op(int t, char id, char op[], process *ps, int ready);
+
+bool in_array(process p, process *ps, int size);
 
 #endif // UTIL_H_

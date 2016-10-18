@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 #include "util.h"
 #include "process.h"
 
@@ -18,6 +19,11 @@ process *queue_fcfs(process *pl);
 process *queue_sjf(process *pl);
 process *queue_rr(process *pl);
 void simulate_fcfs(process *queue);
+void check_finish_io(int time, io_block *blocks, int *num_blocks);
+void delete_first_process(process *processes);
+void delete_first_block(io_block *blocks, int *num_blocks);
+void check_process_arrived(int time, process *queue, int *ready);
+
 
 #define DEFAULT_NUM_PROCESSES 4
 
@@ -90,7 +96,7 @@ void simulate(p_list *process_list) {
 		switch(a) {
 			case 0: 
 				queue = queue_fcfs(process_list->processes);
-				// simulate_fcfs(queue);
+				simulate_fcfs(queue);
 				break;
 			case 1:
 				queue = queue_sjf(process_list->processes);
@@ -123,10 +129,7 @@ process *queue_fcfs(process *pl) {
 	for(i = 0; i < n; i++) {
 		queue.processes[i] = pl[i];
 	}
-
-	print_process_list(queue.processes, n);
 	qsort(queue.processes, n, sizeof(process), compare_process_by_arrival);
-	printf("|--- POST SORT ---------------\n");
 
 	return queue.processes;
 }
@@ -141,9 +144,7 @@ process *queue_sjf(process *pl) {
 	for(i = 0; i < n; i++) {
 		queue.processes[i] = pl[i];
 	}
-
 	qsort(queue.processes, n, sizeof(process), compare_process_by_burst);
-	printf("|--- POST SORT ---------------\n");
 
 	return queue.processes;
 }
@@ -158,9 +159,7 @@ process *queue_rr(process *pl) {
 	for(i = 0; i < n; i++) {
 		queue.processes[i] = pl[i];
 	}
-
 	qsort(queue.processes, n, sizeof(process), compare_process_by_arrival);
-	printf("|--- POST SORT ---------------\n");
 
 	return queue.processes;
 }
@@ -168,6 +167,174 @@ process *queue_rr(process *pl) {
 /*
 	Simulate FCFS algorithm
 */
+void simulate_fcfs(process *queue) {
+	// bool done = false;
+	int time = 0;
+	// int next_end_io_time = 0;
+	int i = 0;
+	int j;
+
+	// process ready_queue[n];
+	int ready = 0;
+	// process queue[n];
+	// int queue_size = 0;
+
+	io_block blocks[n];
+	int num_blocks = 0;
+
+
+
+	printf("time %dms: Simulator started for %s [Q empty]\n", time, FCFS);
+
+	while(n != 0) {	
+		// print_process_list(queue, n);
+		check_process_arrived(time, queue, &ready);
+		// print_process_list(queue, ready);
+
+
+
+		io_block b;
+		process p = queue[0];
+		
+		if(p.arrival_time > time)
+			time = p.arrival_time;
+
+		check_process_arrived(time, queue, &ready);
+		// track wait time
+
+		// if(next_end_io_time < time) {
+		// 	num_blocks -= check_finish_io(time, blocks, num_blocks, &next_end_io_time);
+		// }
+
+		// check_finish_io(time, blocks, &num_blocks);
+
+		// context switch(starting process)
+		time += t_cs/2;
+		p.wait_time += (time - p.arrival_time);
+
+		check_process_arrived(time, queue, &ready);
+
+		// if(next_end_io_time < time) {
+		// 	num_blocks -= check_finish_io(time, blocks, num_blocks, &next_end_io_time);
+		// }
+
+		// check if process has any more bursts
+		// if no, remove from queue,
+		// if yes, stick onto end of queue.
+
+		queue[0].num_bursts -= 1;
+		if(ready != 0)
+			ready -= 1;
+		if(queue[0].num_bursts > 0) {
+			queue[0].arrival_time = p.arrival_time + p.wait_time + p.cpu_burst_time + p.io_time;
+			qsort(queue, n, sizeof(process), compare_process_by_arrival);
+			// print_process_list(queue, n);
+		} else {
+			// remove process from queue
+			delete_first_process(queue);
+		}
+
+		// start process
+		print_op(time, p.process_id, "scpu", queue, ready);
+		time += p.cpu_burst_time;
+
+		check_process_arrived(time, queue, &ready);
+
+		// finish burst
+		print_op(time, p.process_id, "fcpu", queue, ready);
+
+		// start io		
+		print_op(time, p.process_id, "sio", queue, ready);
+
+
+		// // keep track of block time
+		// if(p.io_time > 0) {
+		// 	b.process_id = p.process_id;
+		// 	b.time_unblocked = (time + p.io_time);
+		// 	blocks[num_blocks] = b;
+		// 	num_blocks += 1;
+		// 	if(num_blocks > 1) {
+		// 		// sort io_blocks
+		// 		for(j = 0; j < num_blocks; j++)
+		// 			printf("block {%d, %c}\n", blocks[i].time_unblocked, blocks[i].process_id);
+		// 		qsort(blocks, num_blocks, sizeof(io_block), compare_io_block);
+		// 	}
+		// }
+
+		// // add process back to queue if it's not finished
+		// if(queue[0].num_bursts > 0) {
+		// 	queue[0].arrival_time = b.time_unblocked;
+		// 	qsort(queue, n, sizeof(process), compare_process_by_arrival);
+		// 	// print_process_list(queue, n);
+		// } else {
+		// 	ready -= 1;
+		// 	// remove process from queue
+		// 	// delete_first_process(queue);
+		// }
+
+		// context switch (exiting process)
+		time += t_cs/2;
+
+		check_process_arrived(time, queue, &ready);
+		
+		// if(next_end_io_time < time) {
+		// 	num_blocks -= check_finish_io(time, blocks, num_blocks, &next_end_io_time);
+		// } 
+
+		// if(n == 0 && num_blocks == 0) {
+		// 	done = true;
+		// }
+		i++;
+	}
+	printf("time %dms: Simulator finished for %s\n", time, FCFS);
+}
+
+// void check_finish_io(int time, io_block *blocks, int *num_blocks) {
+// 	if(*num_blocks == 0) { return; }
+
+// 	printf("%d\n", *num_blocks);
+// 	while(blocks[0].time_unblocked < time) {
+// 		print_op(blocks[0].time_unblocked, blocks[0].process_id, "fio");
+// 		delete_first_block(blocks, num_blocks);
+// 	}
+// }
+
+void check_process_arrived(int time, process *queue, int *ready) {
+	int i;
+	for(i = 0; i < n; i++) {
+		if(queue[i].arrival_time <= time && !in_array(queue[i], queue, *ready)) {
+			*ready += 1;
+			print_op(queue[i].arrival_time, queue[i].process_id, "rdy", queue, *ready);
+		} else {
+			break;
+		}
+	}
+}
+
+void delete_first_process(process *processes) {
+	int i;
+	if(n == 1) {
+		n-=1;
+		return;
+	}
+	for(i = 0; i < n - 1; i++) {
+		processes[i] = processes[i+1];
+	}
+	n-=1;
+}
+
+void delete_first_block(io_block *blocks, int *num_blocks) {
+	if(*num_blocks == 1) {
+		*num_blocks -= 1;
+		return;
+	}
+	int i;
+	for(i = 0; i < *num_blocks-1; i++) {
+		blocks[i] = blocks[i+1];
+	}
+	*num_blocks -= 1;
+}
+
 #if 0
 void simulate_fcfs(process **queue) {
 	printf("time 0ms: Start of simulation %s [Q <queue-contents>]\n", FCFS);

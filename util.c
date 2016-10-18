@@ -113,18 +113,41 @@ void check_args(char *argv[]) {
 	}
 }
 
-void print_op(int t, char id, char op[]) {
-	if(strcmp(op, "scpu") == 0){
-		printf("time %dms: Process %c starts using the CPU\n", t, id);
-	} else if (strcmp(op, "fcpu") == 0) {
-		printf("time %dms: Process %c finishes using the CPU\n", t, id);
-	} else if (strcmp(op, "sio") == 0) {
-		printf("time %dms: Process %c starts performing I/O\n", t, id);
-	} else if (strcmp(op, "fio") == 0) {
-		printf("time %dms: Process %c finishes performing I/O\n", t, id);
-	} else if (strcmp(op, "strt") == 0) {
-		printf("time %dms: Process %c starts\n", t, id);
-	} else if (strcmp(op, "end") == 0) {
-		printf("time %dms: Process %c terminates\n", t, id);
+void print_op(int t, char id, char op[], process *ps, int ready) {
+	// printf("%d\n", ready);
+	char prnt[(ready*2+1)];
+	int i;
+	for(i = 0; i < ready; i++) {
+		prnt[i*2] = ' ';
+		prnt[i*2+1] = ps[i].process_id;
 	}
+	prnt[ready*2] = '\0';
+
+	if(strcmp(op, "scpu") == 0){
+		printf("time %dms: Process %c starts using the CPU", t, id);
+	} else if (strcmp(op, "fcpu") == 0) {
+		printf("time %dms: Process %c finishes using the CPU", t, id);
+	} else if (strcmp(op, "sio") == 0) {
+		printf("time %dms: Process %c starts performing I/O", t, id);
+	} else if (strcmp(op, "fio") == 0) {
+		printf("time %dms: Process %c finishes performing I/O", t, id);
+	} else if (strcmp(op, "rdy") == 0) {
+		printf("time %dms: Process %c arrived", t, id);
+	} else if (strcmp(op, "end") == 0) {
+		printf("time %dms: Process %c terminates", t, id);
+	}
+	if(ready == 0) {
+		printf(" [Q empty]\n");
+	} else
+		printf(" [Q%s]\n", prnt);
+}
+
+bool in_array(process p, process *processes, int size) {
+	int i;
+	for(i = 0; i < size; i++) {
+		if(p.process_id == processes[i].process_id) {
+			return true;
+		}
+	}
+	return false;
 }
