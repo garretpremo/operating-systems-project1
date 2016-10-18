@@ -20,6 +20,7 @@ struct process {
 	int wait_time;
 	int turnaround_time;
 	bool arrived;
+	bool in_io;
 }; 
 
 struct io_block {
@@ -36,6 +37,8 @@ void queue_tostr(process *p, char *str, int size);
 int compare_process_by_arrival(const void * a, const void * b);
 
 int compare_process_by_id(const void * a, const void * b);
+
+int compare_process_by_arrival_then_burst(const void * a, const void * b);
 
 int compare_process_by_burst(const void * a, const void * b);
 

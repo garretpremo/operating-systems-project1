@@ -55,6 +55,7 @@ void parse(FILE *f, p_list *proclist) {
 					proclist->processes = (process *)realloc(proclist->processes, max_procs*sizeof(process));
 				}
 				p.arrived = false;
+				p.in_io = false;
 				proclist->processes[proclist->size] = p;
 				proclist->size += 1;
 				memset(&buffer[0], '\0', sizeof(buffer));
@@ -127,7 +128,8 @@ void print_op(int t, process p, char op[], process *ps, int ready) {
 	if(strcmp(op, "scpu") == 0){
 		printf("time %dms: Process %c started using the CPU", t, p.process_id);
 	} else if (strcmp(op, "fcpu") == 0) {
-		printf("time %dms: Process %c completed a CPU burst; %d to go", t, p.process_id);
+		printf("time %dms: Process %c completed a CPU burst; %d to go", t, p.process_id,
+												p.num_bursts);
 	} else if (strcmp(op, "sio") == 0) {
 		printf("time %dms: Process %c blocked on I/O until time %dms", t, p.process_id,
 												t + p.io_time);

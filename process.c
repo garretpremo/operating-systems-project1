@@ -34,9 +34,60 @@ int compare_process_by_id(const void * a, const void * b) {
 	else return 1;
 }
 
-int compare_process_by_burst(const void * a, const void * b) {
-	if((*(process*)a).arrival_time + (*(process*)a).cpu_burst_time <= (*(process*)b).arrival_time + (*(process*)b).cpu_burst_time) return -1;
-	else return 1;
+int compare_process_by_arrival_then_burst(const void * a, const void * b) {
+	if((*(process*)a).arrival_time < (*(process*)b).arrival_time) {
+		return -1;
+	}
+	else if ((*(process*)a).arrival_time > (*(process*)b).arrival_time) {
+		return 1;
+	}
+	else {
+		if((*(process*)a).cpu_burst_time <= (*(process*)b).cpu_burst_time) {
+			return -1;
+		}
+		else 
+			return 1;
+	}
+}
+
+int compare_process_by_burst (const void * a, const void * b) {
+	if((*(process*)a).arrived < (*(process*)b).arrived) {
+		return 1;
+	}
+	else if((*(process*)a).arrived > (*(process*)b).arrived) {
+		return -1;
+	}
+	else if((*(process*)a).arrived == false) {
+		if((*(process*)a).arrival_time < (*(process*)b).arrival_time) {
+			return -1;
+		}
+		else if ((*(process*)a).arrival_time > (*(process*)b).arrival_time) {
+			return 1;
+		}
+		else {
+			if((*(process*)a).cpu_burst_time <= (*(process*)b).cpu_burst_time) {
+				return -1;
+			}
+			else 
+				return 1;
+		}
+	}
+
+	else {
+		if((*(process*)a).in_io < (*(process*)b).in_io) {
+			return -1;
+		}
+		else if((*(process*)a).in_io > (*(process*)b).in_io) {
+			return 1;
+		}
+		else {
+			if((*(process*)a).cpu_burst_time <= (*(process*)b).cpu_burst_time) {
+				return -1;
+			}
+			else 
+				return 1;
+		}
+	}
 }
 
 int compare_io_block(const void * a, const void * b) {
