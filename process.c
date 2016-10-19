@@ -80,6 +80,12 @@ int compare_process_by_burst (const void * a, const void * b) {
 		else if((*(process*)a).in_io > (*(process*)b).in_io) {
 			return 1;
 		}
+		else if((*(process*)a).in_io == true){
+			if((*(process*)a).arrival_time <= (*(process*)b).arrival_time) return -1;
+			else return 1;
+			
+		}
+		
 		else {
 			if((*(process*)a).cpu_burst_time <= (*(process*)b).cpu_burst_time) {
 				return -1;

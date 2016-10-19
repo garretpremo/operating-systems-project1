@@ -23,6 +23,7 @@ void check_finish_io(int time, io_block *blocks, int *num_blocks);
 void delete_first_process(process *processes);
 void delete_first_block(io_block *blocks, int *num_blocks);
 void check_process_arrived(int time, process *queue, int *ready);
+void check_process_arrived_sjf(int time, process *queue, int *ready);
 
 
 #define DEFAULT_NUM_PROCESSES 4
@@ -107,7 +108,7 @@ void simulate(p_list *process_list) {
 				simulate_fcfs(queue);
 				break;
 			case 1:
-				qsort(queue, n, sizeof(process), compare_process_by_arrival_then_burst);
+				qsort(queue, n, sizeof(process), compare_process_by_burst);
 				simulate_sjf(queue);
 				// simulate_sjf(queue);
 				break;
@@ -246,7 +247,7 @@ void simulate_fcfs(process *pl) {
 void simulate_sjf(process *pl) {
 
 	int time = 0;
-	int i = 0;
+	//int i = 0;
 
 	process *queue = (process *)calloc(n, sizeof(process));
 	memcpy(queue, pl, n*sizeof(process));
@@ -256,16 +257,21 @@ void simulate_sjf(process *pl) {
 
 	printf("time %dms: Simulator started for %s [Q empty]\n", time, SJF);
 
-	while(i < 5) {	
+	while(n != 0) {	
 
-		check_process_arrived(time, queue, &ready);
+		check_process_arrived_sjf(time, queue, &ready);
+		
 
 		process p = queue[0];
 		
-		if(p.arrival_time > time)
+		if(p.arrival_time > time) {
 			time = p.arrival_time;
+		}
 
-		check_process_arrived(time, queue, &ready);
+
+		check_process_arrived_sjf(time, queue, &ready);
+		
+		
 
 		// context switch(starting process)
 		time += t_cs/2;
@@ -273,7 +279,8 @@ void simulate_sjf(process *pl) {
 		// track wait time
 		p.wait_time += (time - p.arrival_time);
 
-		check_process_arrived(time, queue, &ready);
+		check_process_arrived_sjf(time, queue, &ready);
+
 
 		// check if process has any more bursts
 		// if no, remove from queue,
@@ -285,6 +292,7 @@ void simulate_sjf(process *pl) {
 			ready -= 1;
 		if(queue[0].num_bursts > 0) {
 			queue[0].arrival_time = p.arrival_time + p.wait_time + p.cpu_burst_time + p.io_time;
+			queue[0].in_io = true;
 			qsort(queue, n, sizeof(process), compare_process_by_burst);
 			// print_process_list(queue, n);
 		} else {
@@ -296,7 +304,7 @@ void simulate_sjf(process *pl) {
 		print_op(time, p, "scpu", queue, ready);
 		time += p.cpu_burst_time;
 
-		check_process_arrived(time, queue, &ready);
+		check_process_arrived_sjf(time, queue, &ready);
 
 		if(p.num_bursts == 0) {
 			print_op(time, p, "end", queue, ready);
@@ -306,7 +314,7 @@ void simulate_sjf(process *pl) {
 			print_op(time, p, "fcpu", queue, ready);
 
 			// start io		
-			queue[0].in_io = true;
+		
 			print_op(time, p, "sio", queue, ready);
 
 		}
@@ -314,8 +322,8 @@ void simulate_sjf(process *pl) {
 		// context switch (exiting process)
 		time += t_cs/2;
 
-		check_process_arrived(time, queue, &ready);
-		i++;
+		check_process_arrived_sjf(time, queue, &ready);
+		//i++;
 	}
 
 	free(queue);
@@ -333,7 +341,31 @@ void check_process_arrived(int time, process *queue, int *ready) {
 				queue[i].arrived = true;
 				print_op(queue[i].arrival_time, queue[i], "rdy", queue, *ready);
 			} else {
+				queue[i].in_io = false;
 				print_op(queue[i].arrival_time, queue[i], "fio", queue, *ready);
+			}
+		} else {
+			break;
+		}
+	}
+}
+
+void check_process_arrived_sjf(int time, process *queue, int *ready) {
+	int i;
+	process tmp;
+	for(i = 0; i < n; i++) {
+		if(queue[i].arrival_time <= time && !in_array(queue[i], queue, *ready)) {
+			*ready += 1;
+			if(!queue[i].arrived) {
+				queue[i].arrived = true;
+				tmp = queue[i];
+				qsort(queue, n, sizeof(process), compare_process_by_burst);
+				print_op(tmp.arrival_time, tmp, "rdy", queue, *ready);
+			} else {
+				queue[i].in_io = false;
+				tmp = queue[i];
+				qsort(queue, n, sizeof(process), compare_process_by_burst);
+				print_op(tmp.arrival_time, tmp, "fio", queue, *ready);
 			}
 		} else {
 			break;
