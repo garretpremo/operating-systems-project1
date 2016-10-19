@@ -22,8 +22,7 @@ void parse(FILE *f, p_list *proclist) {
 	bool comment = false;
 	bool newline = false;
 	int proc_def = 0;
-	int max_procs = DEFAULT_NUM_PROCESSES;
-	
+	int max_procs = DEFAULT_NUM_PROCESSES;	
 	process p;
 
 	/*
@@ -75,6 +74,7 @@ void parse(FILE *f, p_list *proclist) {
 							p.arrival_time = atoi(buffer);
 						case 2:
 							p.cpu_burst_time = atoi(buffer);
+							p.remaining_time = p.cpu_burst_time;
 						case 3:
 							p.num_bursts = atoi(buffer);
 						default: // reset buffer
@@ -125,20 +125,27 @@ void print_op(int t, process p, char op[], process *ps, int ready) {
 	}
 	prnt[ready*2] = '\0';
 
+	if (strcmp(op, "prmp") == 0) {
+		printf("time %dms: Time slice expired; process %c preempted with %dms to go",
+						t, p.process_id, p.remaining_time);
+	} else if(strcmp(op, "nprmp") == 0) {
+		printf("time %dms: Time slice expired; no preemption because ready queue is empty",
+						t);
+	} else {
+		printf("time %dms: Process %c ", t, p.process_id);
+	}
 	if(strcmp(op, "scpu") == 0){
-		printf("time %dms: Process %c started using the CPU", t, p.process_id);
+		printf("started using the CPU");
 	} else if (strcmp(op, "fcpu") == 0) {
-		printf("time %dms: Process %c completed a CPU burst; %d to go", t, p.process_id,
-												p.num_bursts);
+		printf("completed a CPU burst; %d to go", p.num_bursts);
 	} else if (strcmp(op, "sio") == 0) {
-		printf("time %dms: Process %c blocked on I/O until time %dms", t, p.process_id,
-												t + p.io_time);
+		printf("blocked on I/O until time %dms", t + p.io_time);
 	} else if (strcmp(op, "fio") == 0) {
-		printf("time %dms: Process %c completed I/O", t, p.process_id);
+		printf("completed I/O");
 	} else if (strcmp(op, "rdy") == 0) {
-		printf("time %dms: Process %c arrived", t, p.process_id);
+		printf("arrived");
 	} else if (strcmp(op, "end") == 0) {
-		printf("time %dms: Process %c terminated", t, p.process_id);
+		printf("terminated");
 	}
 	if(ready == 0) {
 		printf(" [Q empty]\n");

@@ -12,15 +12,16 @@ struct process_list {
 
 //  times are in milliseconds
 struct process {
-	char process_id;
 	int arrival_time;
 	int cpu_burst_time;
+	int remaining_time;
 	int num_bursts;
 	int io_time;
 	int wait_time;
 	int turnaround_time;
 	bool arrived;
 	bool in_io;
+	char process_id;
 }; 
 
 struct io_block {

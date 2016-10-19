@@ -19,6 +19,8 @@ void queue_fcfs(process *pl, process *queue);
 process *queue_sjf(process *pl);
 process *queue_rr(process *pl);
 void simulate_fcfs(process *pl);
+void simulate_sjf(process *pl);
+void simulate_rr(process *pl);
 void check_finish_io(int time, io_block *blocks, int *num_blocks);
 void delete_first_process(process *processes);
 void delete_first_block(io_block *blocks, int *num_blocks);
@@ -95,75 +97,35 @@ void simulate(p_list *process_list) {
 	/* a for algorithm */
 	int a;
 	for(a = 0; a < 3; a++) {
-		printf("%d\n", n);	
+
 		// copy process list into a ready queue
 		queue = (process *)calloc(n, sizeof(process));
 		memcpy(queue, process_list->processes, n*sizeof(process));
 
-		if(a != 1) { continue; }
-		switch(a) {
-			case 0: 
-				// sort ready queue by arrival time
-				qsort(queue, n, sizeof(process), compare_process_by_arrival);
-				simulate_fcfs(queue);
-				break;
-			case 1:
-				qsort(queue, n, sizeof(process), compare_process_by_burst);
-				simulate_sjf(queue);
-				// simulate_sjf(queue);
-				break;
-			case 2:  
-				queue = queue_rr(process_list->processes);
-				printf("time 0ms: Start of simulation %s [Q <queue-contents>]\n", RR);
-				// simulate_rr(queue);
-				break;
+		if(a == 2) {
+			switch(a) {
+				case 0: 
+					// sort ready queue by arrival time
+					qsort(queue, n, sizeof(process), compare_process_by_arrival);
+					simulate_fcfs(queue);
+					break;
+				case 1:
+					qsort(queue, n, sizeof(process), compare_process_by_burst);
+					simulate_sjf(queue);
+					// simulate_sjf(queue);
+					break;
+				case 2:  
+					qsort(queue, n, sizeof(process), compare_process_by_arrival);
+					simulate_rr(queue);
+					// simulate_rr(queue);
+					break;
+			}
 		}
-
 		// clean up
 		n = N;
 		free(queue);
 	}
 	printf("simulate(): end simulate\n");
-}
-
-/* NOTE: Queue functions below currently only copy the inputted
-		process list. Algorithms not yet implemented. */
-
-/*
-	Create First-Come-First-Serve (FCFS) queue
-*/
-void queue_fcfs(process *pl, process *queue) {
-	memcpy(queue, pl, sizeof(process));
-}
-
-/*
-	Create Shortest Job First (SJF) queue
-*/
-process *queue_sjf(process *pl) {
-	p_list queue;
-	queue.processes = (process *)calloc(n, sizeof(process));
-	int i;
-	for(i = 0; i < n; i++) {
-		queue.processes[i] = pl[i];
-	}
-	qsort(queue.processes, n, sizeof(process), compare_process_by_burst);
-
-	return queue.processes;
-}
-
-/*
-	Create Round Robin (RR) queue 
-*/
-process *queue_rr(process *pl) {
-	p_list queue;
-	queue.processes = (process *)calloc(n, sizeof(process));
-	int i;
-	for(i = 0; i < n; i++) {
-		queue.processes[i] = pl[i];
-	}
-	qsort(queue.processes, n, sizeof(process), compare_process_by_arrival);
-
-	return queue.processes;
 }
 
 /*
@@ -330,23 +292,145 @@ void simulate_sjf(process *pl) {
 	printf("time %dms: Simulator ended for %s\n", time, SJF);
 }
 
+void simulate_rr(process *pl) {
+	int time = 0;
+	int i = 0;
 
+	process *queue = (process *)calloc(n, sizeof(process));
+	memcpy(queue, pl, n*sizeof(process));
+
+	int ready = 0;
+
+	char prev_id;
+	
+	bool just_ended = false;
+
+	printf("time %dms: Simulator started for %s [Q empty]\n", time, FCFS);
+
+	while(n != 0) {	
+		check_process_arrived(time, queue, &ready);
+
+		process p = queue[0];
+
+		bool no_preemp = true;
+		
+		if(p.arrival_time > time)
+			time = p.arrival_time;
+
+		check_process_arrived(time, queue, &ready);
+
+		// context switch(starting process)
+		time += t_cs/2;
+
+		// track wait time
+		p.wait_time += (time - p.arrival_time);
+
+
+		// check if process has any more bursts
+		// if no, remove from queue,
+		// if yes, stick onto end of queue.
+		while(no_preemp) {
+			check_process_arrived(time, queue, &ready);
+			if(queue[0].remaining_time - t_slice <= 0) {
+				// printf("before: proc %c; %dms\n", queue[0].process_id, queue[0].remaining_time);
+				queue[0].num_bursts -= 1;
+				p.num_bursts -= 1;
+				int rem = queue[0].remaining_time;
+				if(ready != 0)
+					ready -= 1;
+				if(queue[0].num_bursts > 0) {
+					queue[0].arrival_time = time + rem + p.io_time;
+					queue[0].remaining_time = queue[0].cpu_burst_time;
+					queue[0].in_io = true;
+					qsort(queue, n, sizeof(process), compare_process_by_arrival);
+					// print_process_list(queue, n);
+				} else {
+					// remove process from queue
+					delete_first_process(queue);
+				}
+
+				// start process
+				print_op(time, p, "scpu", queue, ready);
+				
+				time += rem;				
+
+				check_process_arrived(time, queue, &ready);
+
+				if(p.num_bursts == 0) {
+					print_op(time, p, "end", queue, ready);
+					if(n != 0){
+						just_ended = true;
+						print_op(time + t_cs, queue[0], "scpu", queue, ready-1);
+					}
+				} else {
+
+					// finish burst
+					print_op(time, p, "fcpu", queue, ready);
+
+					// start io		
+					print_op(time, p, "sio", queue, ready);
+					//printf("%d\n", p.arrival_time);
+
+				}
+				check_process_arrived(time, queue, &ready);
+			} else {
+				queue[0].in_io = false;
+				queue[0].remaining_time -= t_slice;
+				p.remaining_time -= t_slice;
+				queue[0].arrival_time = time + t_slice;
+
+				qsort(queue, n, sizeof(process), compare_process_by_arrival);
+
+				if(time + t_slice != queue[0].arrival_time && !just_ended)
+					print_op(time, p, "scpu", queue, ready-1);
+				else if(time + t_slice != queue[0].arrival_time && just_ended)
+					just_ended = false;
+
+
+
+				time = time + t_slice;
+				if(ready != 0)
+					ready -= 1;
+
+				check_process_arrived(time, queue, &ready);
+
+				if(time == queue[0].arrival_time) {
+					print_op(time, p, "nprmp", queue, ready-1);
+					continue;
+				} else {
+					print_op(time, p, "prmp", queue, ready);
+				}
+			}
+			no_preemp = false;
+		}
+
+
+		// context switch (exiting process)
+		time += t_cs/2;
+
+		check_process_arrived(time, queue, &ready);
+		i++;
+
+	}
+	free(queue);
+	printf("time %dms: Simulator ended for %s\n", time, RR);
+}
 
 void check_process_arrived(int time, process *queue, int *ready) {
 	int i;
 	for(i = 0; i < n; i++) {
 		if(queue[i].arrival_time <= time && !in_array(queue[i], queue, *ready)) {
+			// printf("time %dms: Process %c ARRIVED: %d\n", time, queue[i].process_id, queue[i].arrived);
 			*ready += 1;
+
 			if(!queue[i].arrived) {
 				queue[i].arrived = true;
 				print_op(queue[i].arrival_time, queue[i], "rdy", queue, *ready);
-			} else {
+			} else if(queue[i].in_io) {
 				queue[i].in_io = false;
 				print_op(queue[i].arrival_time, queue[i], "fio", queue, *ready);
-			}
-		} else {
-			break;
-		}
+			} 
+		} 
 	}
 }
 
@@ -396,77 +480,3 @@ void delete_first_block(io_block *blocks, int *num_blocks) {
 	}
 	*num_blocks -= 1;
 }
-
-#if 0
-void simulate_fcfs(process **queue) {
-	printf("time 0ms: Start of simulation %s [Q <queue-contents>]\n", FCFS);
-	char *process_ids = (char *)calloc(n, sizeof(char));
-	int *cpu_burst_times = (int *)calloc(n, sizeof(int));
-	int *context_switch_times = (int *)calloc(n, sizeof(int));
-	int *io_times = (int *)calloc(n, sizeof(int));
-	int *wait_times = (int *)calloc(n, sizeof(int));
-	int i, j;
-	bool io_blocked = false;
-	//int io_unblock_time = 0;
-	int total_time = 0;
-
-	for(i = 0; i < 1; i++) {
-		//int total_time = 0;
-		process *p = queue[i];
-		process_ids[i] = p->process_id;
-		for(j = 0; j < p->num_bursts; j++) {
-			// start process
-			print_op(total_time, p->process_id, "scpu");
-
-			// cpu burst
-			cpu_burst_times[i] += p->cpu_burst_time;
-			total_time += p->cpu_burst_time;
-			print_op(total_time, p->process_id, "fcpu");
-			
-			// context switch
-			context_switch_times[i] += t_cs;
-			total_time += (p->cpu_burst_time + t_cs);
-
-			// start io
-			io_times[i] += p->io_time;
-			if(!io_blocked) {
-				print_op(total_time, p->process_id, "sio");
-				io_blocked = true;
-			}
-		}
-		print_op(total_time, p->process_id, "end");
-
-
-
-		// if(i != 0) {
-		// 	if(cpu_burst_times[i-1] + wait_times[i-1] + 
-		// 		context_switch_times[i-1] > p->arrival_time) {
-
-		// 		wait_times[i] = (cpu_burst_times[i-1] - p->arrival_time 
-		// 						+ wait_times[i-1] + context_switch_times[i-1]);
-
-		// 		p->wait_time = wait_times[i];
-		// 		printf("%c wait time: %d\n", p->process_id, p->wait_time);
-		// 	}
-		// } else {
-		// 	wait_times[i] = p->arrival_time;
-		// }			
-
-		//printf("total cpu_burst_time %d\n", total_cpu_burst_time);
-
-		//print_process(p);
-	}
-	printf("time %dms: Simulator ended for %s\n", total_time, FCFS);
-	free(process_ids);
-	free(cpu_burst_times);
-	free(context_switch_times);
-	free(io_times);
-	free(wait_times);
-}
-
-bool check_finish_io(int t, int unblock_t) {
-	return t > unblock_t;
-}
-#endif
-
-
