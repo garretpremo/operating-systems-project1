@@ -16,6 +16,22 @@ void print_process(process p) {
 	printf("%c|%d|%d|%d|%d\n", p.process_id, p.arrival_time, p.cpu_burst_time, p.num_bursts, p.io_time);
 }
 
+void calculate_stats(int total_procs, int N, process *queue, process *pl, p_avgs *averages) {
+	int i = 0;
+	int total_cpu_burst_time = 0;
+	int total_wait_time = 0;
+	int total_turnaround_time = 0;
+	for(i = 0; i < N; i++) {
+		total_cpu_burst_time += pl[i].cpu_burst_time * pl[i].num_bursts;
+		total_turnaround_time += queue[i].turnaround_time;
+		total_wait_time += queue[i].wait_time;
+	}
+
+	averages->cpu_burst_time = (float)total_cpu_burst_time/total_procs;
+	averages->wait_time = (float)total_wait_time/total_procs;
+	averages->turnaround_time = (float)total_turnaround_time/total_procs;
+}
+
 void queue_tostr(process *p, char *str, int size) {
 	int i;
 	for(i = 0; i < size; i++) {
@@ -94,9 +110,4 @@ int compare_process_by_burst (const void * a, const void * b) {
 				return 1;
 		}
 	}
-}
-
-int compare_io_block(const void * a, const void * b) {
-	if((*(io_block*)a).time_unblocked <= (*(io_block*)b).time_unblocked) return -1;
-	else return 1;
 }

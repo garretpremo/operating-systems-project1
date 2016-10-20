@@ -14,21 +14,18 @@
 #include "process.h"
 
 /* function definitions */
-void simulate(p_list *process_list);
-void queue_fcfs(process *pl, process *queue);
-process *queue_sjf(process *pl);
-process *queue_rr(process *pl);
-void simulate_fcfs(process *pl);
-void simulate_sjf(process *pl);
+void simulate(p_list *process_list, p_avgs *averages);
+void simulate_fcfs(process *pl, p_avgs *averages);
+void simulate_sjf(process *pl, p_avgs *averages);
 void simulate_rr(process *pl);
-void check_finish_io(int time, io_block *blocks, int *num_blocks);
 void delete_first_process(process *processes);
-void delete_first_block(io_block *blocks, int *num_blocks);
 void check_process_arrived(int time, process *queue, int *ready);
 void check_process_arrived_sjf(int time, process *queue, int *ready);
+void print_stats(p_avgs *averages, int sims);
 
 
 #define DEFAULT_NUM_PROCESSES 4
+#define SIMULATORS 3
 
 /* constant definitions */
 
@@ -67,11 +64,16 @@ int main(int argc, char *argv[]) {
 		return(EXIT_FAILURE);
     }
 
-	// parse all processes from the file
 	p_list process_list;
 
+	p_avgs *averages;
+
+	// allocate memory for processes & initialize size
 	process_list.processes = (process *)calloc(DEFAULT_NUM_PROCESSES, sizeof(process));
 	process_list.size = 0;
+
+	// allocate memory for statistics ( 3 for 3 simulators )
+	averages = (p_avgs *)calloc(SIMULATORS, sizeof(p_avgs));
 
 	// parse input file
 	parse(f, &process_list);
@@ -80,15 +82,13 @@ int main(int argc, char *argv[]) {
 	N = process_list.size;
 	n = N;
 
-	simulate(&process_list);
+	simulate(&process_list, averages);
 
 
 	// clean up
-	printf("cleanup\n");
 	fclose(f);
 	fclose(s);
 	free(process_list.processes);
-	printf("exit successfully\n");
 	return EXIT_SUCCESS;
 }
 
@@ -100,27 +100,27 @@ int main(int argc, char *argv[]) {
 			which is stored in a struct (see process.h)
 
 */
-void simulate(p_list *process_list) {
+void simulate(p_list *process_list, p_avgs *averages) {
 	printf("simulate(): begin simulate\n");
 	process *queue;
 
 	/* a for algorithm */
 	int a;
-	for(a = 0; a < 3; a++) {
+	for(a = 0; a < SIMULATORS; a++) {
 
 		// copy process list into a ready queue
 		queue = (process *)calloc(n, sizeof(process));
 		memcpy(queue, process_list->processes, n*sizeof(process));
-		
+		if(a == 0 || a == 1){
 		switch(a) {
 			case 0: 
 				// sort ready queue by arrival time
 				qsort(queue, n, sizeof(process), compare_process_by_arrival);
-				simulate_fcfs(queue);
+				simulate_fcfs(queue, &averages[a]);
 				break;
 			case 1:
 				qsort(queue, n, sizeof(process), compare_process_by_burst);
-				simulate_sjf(queue);
+				simulate_sjf(queue, &averages[a]);
 				// simulate_sjf(queue);
 				break;
 			case 2:  
@@ -129,24 +129,31 @@ void simulate(p_list *process_list) {
 				// simulate_rr(queue);
 				break;
 		}
+		}
 		// clean up
 		n = N;
 		free(queue);
 	}
+	print_stats(averages, SIMULATORS);
+
 	printf("simulate(): end simulate\n");
 }
 
 /*
 	Simulate FCFS algorithm
 */
-void simulate_fcfs(process *pl) {
+void simulate_fcfs(process *pl, p_avgs *averages) {
 
 	int time = 0;
+	int ready = 0;
+	int total_procs = 0;
+	int total_cs = 0;
+	int i;
+
+	char previd = ' ';
 
 	process *queue = (process *)calloc(n, sizeof(process));
 	memcpy(queue, pl, n*sizeof(process));
-
-	int ready = 0;
 
 
 	printf("time %dms: Simulator started for %s [Q empty]\n", time, FCFS);
@@ -163,11 +170,19 @@ void simulate_fcfs(process *pl) {
 
 		// context switch(starting process)
 		time += t_cs/2;
+		total_cs++;
 
 		// track wait time
-		p.wait_time += (time - p.arrival_time);
+		p.wait_time = (time - p.arrival_time);
+		queue[0].wait_time += p.wait_time - t_cs/2;
+		if(p.process_id == previd)
+			queue[0].wait_time -= t_cs/2; 
 
 		check_process_arrived(time, queue, &ready);
+
+		// record turnaround time
+		queue[0].turnaround_time += time + queue[0].cpu_burst_time - queue[0].arrival_time;
+		total_procs+= 1;
 
 		// check if process has any more bursts
 		// if no, remove from queue,
@@ -209,20 +224,30 @@ void simulate_fcfs(process *pl) {
 
 		check_process_arrived(time, queue, &ready);
 
+		previd = p.process_id;
 	}
-	free(queue);
 	printf("time %dms: Simulator ended for %s\n", time, FCFS);
+
+	// print statistics for the simulator
+	calculate_stats(total_procs, N, queue, pl, averages);
+	averages->total_cs = total_cs;
+	averages->preemptions = 0;
+
+	// clean up	
+	free(queue);
 }
 
-void simulate_sjf(process *pl) {
+void simulate_sjf(process *pl, p_avgs *averages) {
 
 	int time = 0;
-	//int i = 0;
+	int ready = 0;
+	int total_procs = 0;
+	int total_cs = 0;
+
+	char previd = ' ';
 
 	process *queue = (process *)calloc(n, sizeof(process));
 	memcpy(queue, pl, n*sizeof(process));
-
-	int ready = 0;
 
 
 	printf("time %dms: Simulator started for %s [Q empty]\n", time, SJF);
@@ -240,17 +265,23 @@ void simulate_sjf(process *pl) {
 
 
 		check_process_arrived_sjf(time, queue, &ready);
-		
-		
+
 
 		// context switch(starting process)
 		time += t_cs/2;
+		total_cs++;
 
 		// track wait time
-		p.wait_time += (time - p.arrival_time);
+		p.wait_time = (time - p.arrival_time);
+		queue[0].wait_time += p.wait_time - t_cs/2;
+		if(p.process_id == previd)
+			queue[0].wait_time -= t_cs/2; 
 
-		check_process_arrived_sjf(time, queue, &ready);
+		check_process_arrived(time, queue, &ready);
 
+		// record turnaround time
+		queue[0].turnaround_time += time + queue[0].cpu_burst_time - queue[0].arrival_time;
+		total_procs+= 1;
 
 		// check if process has any more bursts
 		// if no, remove from queue,
@@ -293,11 +324,18 @@ void simulate_sjf(process *pl) {
 		time += t_cs/2;
 
 		check_process_arrived_sjf(time, queue, &ready);
-		//i++;
+		
+		previd = p.process_id;
 	}
-
-	free(queue);
 	printf("time %dms: Simulator ended for %s\n", time, SJF);
+	
+	// print statistics for the simulator
+	calculate_stats(total_procs, N, queue, pl, averages);
+	averages->total_cs = total_cs;
+	averages->preemptions = 0;
+
+	// cleaup
+	free(queue);
 }
 
 void simulate_rr(process *pl) {
@@ -469,20 +507,33 @@ void delete_first_process(process *processes) {
 		n-=1;
 		return;
 	}
+	process p = processes[0];
 	for(i = 0; i < n - 1; i++) {
 		processes[i] = processes[i+1];
 	}
+	processes[n-1] = p;
 	n-=1;
 }
 
-void delete_first_block(io_block *blocks, int *num_blocks) {
-	if(*num_blocks == 1) {
-		*num_blocks -= 1;
-		return;
-	}
+void print_stats(p_avgs *averages, int sims) {
 	int i;
-	for(i = 0; i < *num_blocks-1; i++) {
-		blocks[i] = blocks[i+1];
+	for(i = 0; i < sims; i++) {
+		switch(i) {
+			case 0:
+				printf("Algorithm %s\n", FCFS);
+				break;
+			case 1:
+				printf("%s\n", SJF);
+				break;
+			case 2:
+				printf("%s\n", RR);
+				break;
+		}
+
+		printf(" -- average CPU burst time: %.2f ms\n", averages[i].cpu_burst_time);
+		printf(" -- average wait time: %.2f ms\n", averages[i].wait_time);
+		printf(" -- average turnaround time: %.2f ms\n", averages[i].turnaround_time);
+		printf(" -- total number of context switches: %d\n", averages[i].total_cs);
+		printf(" -- total number of preemptions: %d\n", averages[i].preemptions);
 	}
-	*num_blocks -= 1;
 }

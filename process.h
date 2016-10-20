@@ -3,7 +3,7 @@
 
 typedef struct process process;
 typedef struct process_list p_list;
-typedef struct io_block io_block;
+typedef struct process_averages p_avgs;
 
 struct process_list {
 	process *processes;
@@ -24,14 +24,19 @@ struct process {
 	char process_id;
 }; 
 
-struct io_block {
-	char process_id;
-	int time_unblocked;
+struct process_averages {
+	float cpu_burst_time;
+	float wait_time;
+	float turnaround_time;
+	int total_cs;
+	int preemptions;
 };
 
 void print_process_list(process *pl, int size);
 
 void print_process(process p);
+
+void calculate_stats(int total_procs, int N, process *queue, process *pl, p_avgs *averages);
 
 void queue_tostr(process *p, char *str, int size);
 
@@ -42,7 +47,5 @@ int compare_process_by_id(const void * a, const void * b);
 int compare_process_by_arrival_then_burst(const void * a, const void * b);
 
 int compare_process_by_burst(const void * a, const void * b);
-
-int compare_io_block(const void * a, const void * b);
 
 #endif //PROCESS_H_
