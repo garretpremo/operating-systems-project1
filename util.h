@@ -6,7 +6,7 @@ typedef struct process_list p_list;
 
 void parse(FILE *f, p_list *pl);
 
-FILE *open_file(char *argv[]);
+FILE *open_file(char arg[], char p[]);
 
 void check_args(char *argv[]);
 

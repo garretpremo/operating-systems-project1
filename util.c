@@ -10,6 +10,8 @@
 
 #define DEFAULT_NUM_PROCESSES 4
 
+char INVALID_ARGS[] = "ERROR: Invalid aruments\nUSAGE: ./a.out <input-file>\n";
+
 /*
 	Parse input file and return a list of processes
 
@@ -94,12 +96,11 @@ void parse(FILE *f, p_list *proclist) {
 /*
 	Opens inputted file
 */
-FILE *open_file(char *argv[]) {
-	check_args(argv);
+FILE *open_file(char arg[], char p[]) {
     FILE *fp;
-    fp = fopen(argv[1], "r");
+    fp = fopen(arg, p);
     if (fp == NULL) {
-        perror("ERROR: Invalid aruments\nUSAGE: ./a.out <input-file>\n");
+        perror(INVALID_ARGS);
 		exit(EXIT_FAILURE);
     }
     return fp;
@@ -109,8 +110,8 @@ FILE *open_file(char *argv[]) {
 	Ensures we have correct arguments for our program
 */
 void check_args(char *argv[]) {
-    if(!argv[1]) {
-        perror("ERROR: Invalid aruments\nUSAGE: ./a.out <input-file>\n");
+    if(!argv[1] || !argv[2]) {
+        perror(INVALID_ARGS);
 		exit(EXIT_FAILURE);
 	}
 }

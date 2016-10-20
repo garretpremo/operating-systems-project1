@@ -55,8 +55,17 @@ int N = 0;
 
 int main(int argc, char *argv[]) {
 	
+	check_args(argv);
 	FILE *f;
-	f = open_file(argv); 
+	f = fopen(argv[1], "r");
+
+	FILE *s;
+	s = fopen(argv[2], "w");
+
+    if (f == NULL) {
+        fprintf(stderr, "ERROR: Invalid aruments\nUSAGE: ./a.out <input-file>\n");
+		return(EXIT_FAILURE);
+    }
 
 	// parse all processes from the file
 	p_list process_list;
@@ -77,6 +86,7 @@ int main(int argc, char *argv[]) {
 	// clean up
 	printf("cleanup\n");
 	fclose(f);
+	fclose(s);
 	free(process_list.processes);
 	printf("exit successfully\n");
 	return EXIT_SUCCESS;
@@ -101,25 +111,23 @@ void simulate(p_list *process_list) {
 		// copy process list into a ready queue
 		queue = (process *)calloc(n, sizeof(process));
 		memcpy(queue, process_list->processes, n*sizeof(process));
-
-		if(a == 2) {
-			switch(a) {
-				case 0: 
-					// sort ready queue by arrival time
-					qsort(queue, n, sizeof(process), compare_process_by_arrival);
-					simulate_fcfs(queue);
-					break;
-				case 1:
-					qsort(queue, n, sizeof(process), compare_process_by_burst);
-					simulate_sjf(queue);
-					// simulate_sjf(queue);
-					break;
-				case 2:  
-					qsort(queue, n, sizeof(process), compare_process_by_arrival);
-					simulate_rr(queue);
-					// simulate_rr(queue);
-					break;
-			}
+		
+		switch(a) {
+			case 0: 
+				// sort ready queue by arrival time
+				qsort(queue, n, sizeof(process), compare_process_by_arrival);
+				simulate_fcfs(queue);
+				break;
+			case 1:
+				qsort(queue, n, sizeof(process), compare_process_by_burst);
+				simulate_sjf(queue);
+				// simulate_sjf(queue);
+				break;
+			case 2:  
+				qsort(queue, n, sizeof(process), compare_process_by_arrival);
+				simulate_rr(queue);
+				// simulate_rr(queue);
+				break;
 		}
 		// clean up
 		n = N;
@@ -301,8 +309,6 @@ void simulate_rr(process *pl) {
 
 	int ready = 0;
 
-	char prev_id;
-	
 	bool just_ended = false;
 
 	printf("time %dms: Simulator started for %s [Q empty]\n", time, FCFS);
