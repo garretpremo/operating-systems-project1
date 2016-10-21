@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
 	s = fopen(argv[2], "w");
 
     if (f == NULL) {
-        fprintf(stderr, "ERROR: Invalid arguments\nUSAGE: ./a.out <input-file>\n");
+        fprintf(stderr, "ERROR: Invalid arguments\nUSAGE: ./a.out <input-file> <stats-output-file>\n");
 		return(EXIT_FAILURE);
     }
 
@@ -192,6 +192,7 @@ void simulate_fcfs(process *pl, p_avgs *averages) {
 			ready -= 1;
 		if(queue[0].num_bursts > 0) {
 			queue[0].arrival_time = p.arrival_time + p.wait_time + p.cpu_burst_time + p.io_time;
+			queue[0].in_io = true;
 			qsort(queue, n, sizeof(process), compare_process_by_arrival);
 			// print_process_list(queue, n);
 		} else {

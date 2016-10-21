@@ -10,7 +10,7 @@
 
 #define DEFAULT_NUM_PROCESSES 4
 
-char INVALID_ARGS[] = "ERROR: Invalid aruments\nUSAGE: ./a.out <input-file>\n";
+char INVALID_ARGS[] = "ERROR: Invalid arguments\nUSAGE: ./a.out <input-file>  <stats-output-file>\n";
 
 /*
 	Parse input file and return a list of processes
