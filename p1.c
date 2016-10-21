@@ -376,7 +376,7 @@ void simulate_rr(process *pl, p_avgs *averages) {
 			queue[0].wait_time -= t_cs/2; 
 
 		// record turnaround time
-		queue[0].turnaround_time += time + queue[0].cpu_burst_time - queue[0].arrival_time;
+		// queue[0].turnaround_time += time + queue[0].cpu_burst_time - queue[0].arrival_time;
 		total_procs+= 1;
 
 		check_process_arrived(time, queue, &ready);
@@ -390,6 +390,7 @@ void simulate_rr(process *pl, p_avgs *averages) {
 				queue[0].num_bursts -= 1;
 				p.num_bursts -= 1;
 				int rem = queue[0].remaining_time;
+				queue[0].turnaround_time += time + rem - queue[0].arrival_time;
 				if(ready != 0)
 					ready -= 1;
 				if(queue[0].num_bursts > 0) {
@@ -407,6 +408,7 @@ void simulate_rr(process *pl, p_avgs *averages) {
 				if(!started)
 					print_op(time, p, "scpu", queue, ready);
 				
+
 				time += rem;				
 
 				check_process_arrived(time, queue, &ready);
@@ -439,9 +441,11 @@ void simulate_rr(process *pl, p_avgs *averages) {
 				//queue[0].in_io = false;
 				// if(queue[0].process_id == 'D')
 				// 	printf("time %dms: %c\n arrival time: %dms\n time remaining: %dms\n", time, queue[0].process_id, queue[0].arrival_time, queue[0].remaining_time);
+				queue[0].turnaround_time += time + t_slice - queue[0].arrival_time;
 				queue[0].remaining_time -= t_slice;
 				p.remaining_time -= t_slice;
 				queue[0].arrival_time = time + t_slice;
+				
 
 				// if(queue[0].process_id == 'D')
 				// 	printf("time %dms: %c\n arrival time: %dms\n", time, queue[0].process_id, queue[0].arrival_time);
