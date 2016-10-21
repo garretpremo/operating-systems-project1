@@ -520,7 +520,7 @@ void check_process_arrived_sjf(int time, process *queue, int *ready) {
 	int i;
 	process tmp;
 	for(i = 0; i < n; i++) {
-		if(queue[i].arrival_time < time && !in_array(queue[i], queue, *ready)) {
+		if(queue[i].arrival_time <= time && !in_array(queue[i], queue, *ready)) {
 			
 			if(!queue[i].arrived) {
 				*ready += 1;
@@ -588,10 +588,10 @@ void print_stats(p_avgs *averages, int sims) {
 				break;
 		}
 
-		fprintf(avgout, " -- average CPU burst time: %.2f ms\n", averages[i].cpu_burst_time);
-		fprintf(avgout, " -- average wait time: %.2f ms\n", averages[i].wait_time);
-		fprintf(avgout, " -- average turnaround time: %.2f ms\n", averages[i].turnaround_time);
-		fprintf(avgout, " -- total number of context switches: %d\n", averages[i].total_cs);
-		fprintf(avgout, " -- total number of preemptions: %d\n", averages[i].preemptions);
+		fprintf(avgout, "-- average CPU burst time: %.2f ms\n", averages[i].cpu_burst_time);
+		fprintf(avgout, "-- average wait time: %.2f ms\n", averages[i].wait_time);
+		fprintf(avgout, "-- average turnaround time: %.2f ms\n", averages[i].turnaround_time);
+		fprintf(avgout, "-- total number of context switches: %d\n", averages[i].total_cs);
+		fprintf(avgout, "-- total number of preemptions: %d\n", averages[i].preemptions);
 	}
 }
