@@ -470,11 +470,13 @@ void simulate_rr(process *pl, p_avgs *averages) {
 				check_process_arrived(time, queue, &ready);
 
 				if(time == queue[0].arrival_time) {
-					print_op(time, p, "nprmp", queue, ready-1);
+					print_op(time, p, "nprmp", queue, ready);
 					started = true;
 					continue;
 				} else {
+					ready += 1;
 					print_op(time, p, "prmp", queue, ready);
+					ready -= 1;
 					averages->preemptions++;
 				}
 			}
@@ -499,7 +501,7 @@ void check_process_arrived(int time, process *queue, int *ready) {
 	int i;
 	for(i = 0; i < n; i++) {
 		// printf("%d\n", in_array(queue[i], queue, *ready));
-		if(queue[i].arrival_time <= time && !in_array(queue[i], queue, *ready)) {
+		if(queue[i].arrival_time < time && !in_array(queue[i], queue, *ready)) {
 			// printf("time %dms: Process %c ARRIVED: %d\n", time, queue[i].process_id, queue[i].arrived);
 			*ready += 1;
 
