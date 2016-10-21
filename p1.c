@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
 	s = fopen(argv[2], "w");
 
     if (f == NULL) {
-        fprintf(stderr, "ERROR: Invalid aruments\nUSAGE: ./a.out <input-file>\n");
+        fprintf(stderr, "ERROR: Invalid arguments\nUSAGE: ./a.out <input-file>\n");
 		return(EXIT_FAILURE);
     }
 
@@ -101,7 +101,7 @@ int main(int argc, char *argv[]) {
 
 */
 void simulate(p_list *process_list, p_avgs *averages) {
-	printf("simulate(): begin simulate\n");
+	//printf("simulate(): begin simulate\n");
 	process *queue;
 
 	/* a for algorithm */
@@ -134,9 +134,9 @@ void simulate(p_list *process_list, p_avgs *averages) {
 		n = N;
 		free(queue);
 	}
-	//print_stats(averages, SIMULATORS);
+	print_stats(averages, SIMULATORS);
 
-	printf("simulate(): end simulate\n");
+	//printf("simulate(): end simulate\n");
 }
 
 /*
@@ -147,7 +147,6 @@ void simulate_fcfs(process *pl, p_avgs *averages) {
 	int time = 0;
 	int ready = 0;
 	int total_procs = 0;
-	int i;
 
 	char previd = ' ';
 
@@ -513,15 +512,35 @@ void check_process_arrived_sjf(int time, process *queue, int *ready) {
 	process tmp;
 	for(i = 0; i < n; i++) {
 		if(queue[i].arrival_time <= time && !in_array(queue[i], queue, *ready)) {
-			*ready += 1;
+			
 			if(!queue[i].arrived) {
+				*ready += 1;
 				queue[i].arrived = true;
 				tmp = queue[i];
 				qsort(queue, n, sizeof(process), compare_process_by_burst);
 				print_op(tmp.arrival_time, tmp, "rdy", queue, *ready);
 			} else {
-				queue[i].in_io = false;
+				int j;
+				process tmp2;
+				
 				tmp = queue[i];
+				for(j = i+1; j < n; j++) {
+					
+					if(!queue[j].arrived) {
+					if(queue[j].arrival_time <= time && !in_array(queue[j], queue, *ready)) {
+					*ready += 1;
+					
+						queue[j].arrived = true;
+						tmp2 = queue[j];
+						qsort(queue, n, sizeof(process), compare_process_by_burst);
+						print_op(tmp2.arrival_time, tmp2, "rdy", queue, *ready);
+						i = j;
+					}
+					}
+				}
+				*ready += 1;
+				queue[i].in_io = false;
+				
 				qsort(queue, n, sizeof(process), compare_process_by_burst);
 				print_op(tmp.arrival_time, tmp, "fio", queue, *ready);
 			}
