@@ -10,6 +10,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include "util.h"
 #include "process.h"
 
@@ -49,19 +51,21 @@ char RR[] = "RR";
 int n = 0;
 int N = 0;
 
-
 int main(int argc, char *argv[]) {
 	
 	check_args(argv);
 	FILE *f;
 	f = fopen(argv[1], "r");
 
-	FILE *s;
-	s = fopen(argv[2], "w");
+	int filedesc = open(argv[2], O_WRONLY);
+	if (filedesc < 0) {
+		return EXIT_FAILURE;
+	}
+	filedesc = dup2(filedesc, 1);
 
     if (f == NULL) {
         fprintf(stderr, "ERROR: Invalid arguments\nUSAGE: ./a.out <input-file> <stats-output-file>\n");
-		return(EXIT_FAILURE);
+		return EXIT_FAILURE;
     }
 
 	p_list process_list;
@@ -87,7 +91,6 @@ int main(int argc, char *argv[]) {
 
 	// clean up
 	fclose(f);
-	fclose(s);
 	free(process_list.processes);
 	return EXIT_SUCCESS;
 }
@@ -570,7 +573,7 @@ void print_stats(p_avgs *averages, int sims) {
 	for(i = 0; i < sims; i++) {
 		switch(i) {
 			case 0:
-				printf("Algorithm %s\n", FCFS);
+				printf("\nAlgorithm %s\n", FCFS);
 				break;
 			case 1:
 				printf("Algorithm %s\n", SJF);
