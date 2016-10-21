@@ -51,19 +51,18 @@ char RR[] = "RR";
 int n = 0;
 int N = 0;
 
+/* output file for simulation statistical averages */
+FILE *avgout;
+
 int main(int argc, char *argv[]) {
 	
 	check_args(argv);
 	FILE *f;
 	f = fopen(argv[1], "r");
 
-	int filedesc = open(argv[2], O_WRONLY);
-	if (filedesc < 0) {
-		return EXIT_FAILURE;
-	}
-	filedesc = dup2(filedesc, 1);
+	avgout = fopen(argv[2], "w");
 
-    if (f == NULL) {
+    if (f == NULL || avgout == NULL) {
         fprintf(stderr, "ERROR: Invalid arguments\nUSAGE: ./a.out <input-file> <stats-output-file>\n");
 		return EXIT_FAILURE;
     }
@@ -157,7 +156,7 @@ void simulate_fcfs(process *pl, p_avgs *averages) {
 	memcpy(queue, pl, n*sizeof(process));
 
 
-	printf("time %dms: Simulator started for %s [Q empty]\n", time, FCFS);
+	fprintf(stdout, "time %dms: Simulator started for %s [Q empty]\n", time, FCFS);
 
 	while(n != 0) {	
 		check_process_arrived(time, queue, &ready);
@@ -228,7 +227,7 @@ void simulate_fcfs(process *pl, p_avgs *averages) {
 
 		previd = p.process_id;
 	}
-	printf("time %dms: Simulator ended for %s\n", time, FCFS);
+	fprintf(stdout, "time %dms: Simulator ended for %s\n", time, FCFS);
 
 	// print statistics for the simulator
 	calculate_stats(N, queue, pl, averages);
@@ -250,7 +249,7 @@ void simulate_sjf(process *pl, p_avgs *averages) {
 	memcpy(queue, pl, n*sizeof(process));
 
 
-	printf("\ntime %dms: Simulator started for %s [Q empty]\n", time, SJF);
+	fprintf(stdout, "\ntime %dms: Simulator started for %s [Q empty]\n", time, SJF);
 
 	while(n != 0) {	
 
@@ -327,7 +326,7 @@ void simulate_sjf(process *pl, p_avgs *averages) {
 		
 		previd = p.process_id;
 	}
-	printf("time %dms: Simulator ended for %s\n", time, SJF);
+	fprintf(stdout, "time %dms: Simulator ended for %s\n", time, SJF);
 	
 	// print statistics for the simulator
 	calculate_stats(N, queue, pl, averages);
@@ -350,7 +349,7 @@ void simulate_rr(process *pl, p_avgs *averages) {
 
 	bool just_ended = false;
 
-	printf("\ntime %dms: Simulator started for %s [Q empty]\n", time, RR);
+	fprintf(stdout, "\ntime %dms: Simulator started for %s [Q empty]\n", time, RR);
 
 	while(n != 0) {	
 		check_process_arrived(time, queue, &ready);
@@ -489,7 +488,7 @@ void simulate_rr(process *pl, p_avgs *averages) {
 	calculate_stats(N, queue, pl, averages);
 
 	free(queue);
-	printf("time %dms: Simulator ended for %s\n", time, RR);
+	fprintf(stdout, "time %dms: Simulator ended for %s\n", time, RR);
 }
 
 void check_process_arrived(int time, process *queue, int *ready) {
@@ -573,20 +572,20 @@ void print_stats(p_avgs *averages, int sims) {
 	for(i = 0; i < sims; i++) {
 		switch(i) {
 			case 0:
-				printf("\nAlgorithm %s\n", FCFS);
+				fprintf(avgout, "Algorithm %s\n", FCFS);
 				break;
 			case 1:
-				printf("Algorithm %s\n", SJF);
+				fprintf(avgout, "Algorithm %s\n", SJF);
 				break;
 			case 2:
-				printf("Algorithm %s\n", RR);
+				fprintf(avgout, "Algorithm %s\n", RR);
 				break;
 		}
 
-		printf(" -- average CPU burst time: %.2f ms\n", averages[i].cpu_burst_time);
-		printf(" -- average wait time: %.2f ms\n", averages[i].wait_time);
-		printf(" -- average turnaround time: %.2f ms\n", averages[i].turnaround_time);
-		printf(" -- total number of context switches: %d\n", averages[i].total_cs);
-		printf(" -- total number of preemptions: %d\n", averages[i].preemptions);
+		fprintf(avgout, " -- average CPU burst time: %.2f ms\n", averages[i].cpu_burst_time);
+		fprintf(avgout, " -- average wait time: %.2f ms\n", averages[i].wait_time);
+		fprintf(avgout, " -- average turnaround time: %.2f ms\n", averages[i].turnaround_time);
+		fprintf(avgout, " -- total number of context switches: %d\n", averages[i].total_cs);
+		fprintf(avgout, " -- total number of preemptions: %d\n", averages[i].preemptions);
 	}
 }

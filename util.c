@@ -127,31 +127,31 @@ void print_op(int t, process p, char op[], process *ps, int ready) {
 	prnt[ready*2] = '\0';
 
 	if (strcmp(op, "prmp") == 0) {
-		printf("time %dms: Time slice expired; process %c preempted with %dms to go",
+		fprintf(stdout, "time %dms: Time slice expired; process %c preempted with %dms to go",
 						t, p.process_id, p.remaining_time);
 	} else if(strcmp(op, "nprmp") == 0) {
-		printf("time %dms: Time slice expired; no preemption because ready queue is empty",
+		fprintf(stdout, "time %dms: Time slice expired; no preemption because ready queue is empty",
 						t);
 	} else {
-		printf("time %dms: Process %c ", t, p.process_id);
+		fprintf(stdout, "time %dms: Process %c ", t, p.process_id);
 	}
 	if(strcmp(op, "scpu") == 0){
-		printf("started using the CPU");
+		fprintf(stdout, "started using the CPU");
 	} else if (strcmp(op, "fcpu") == 0) {
-		printf("completed a CPU burst; %d to go", p.num_bursts);
+		fprintf(stdout, "completed a CPU burst; %d to go", p.num_bursts);
 	} else if (strcmp(op, "sio") == 0) {
-		printf("blocked on I/O until time %dms", t + p.io_time);
+		fprintf(stdout, "blocked on I/O until time %dms", t + p.io_time);
 	} else if (strcmp(op, "fio") == 0) {
-		printf("completed I/O");
+		fprintf(stdout, "completed I/O");
 	} else if (strcmp(op, "rdy") == 0) {
-		printf("arrived");
+		fprintf(stdout, "arrived");
 	} else if (strcmp(op, "end") == 0) {
-		printf("terminated");
+		fprintf(stdout, "terminated");
 	}
 	if(ready == 0) {
-		printf(" [Q empty]\n");
+		fprintf(stdout, " [Q empty]\n");
 	} else
-		printf(" [Q%s]\n", prnt);
+		fprintf(stdout, " [Q%s]\n", prnt);
 }
 
 bool in_array(process p, process *processes, int size) {
