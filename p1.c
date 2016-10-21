@@ -17,7 +17,7 @@
 void simulate(p_list *process_list, p_avgs *averages);
 void simulate_fcfs(process *pl, p_avgs *averages);
 void simulate_sjf(process *pl, p_avgs *averages);
-void simulate_rr(process *pl);
+void simulate_rr(process *pl, p_avgs *averages);
 void delete_first_process(process *processes);
 void check_process_arrived(int time, process *queue, int *ready);
 void check_process_arrived_sjf(int time, process *queue, int *ready);
@@ -111,7 +111,7 @@ void simulate(p_list *process_list, p_avgs *averages) {
 		// copy process list into a ready queue
 		queue = (process *)calloc(n, sizeof(process));
 		memcpy(queue, process_list->processes, n*sizeof(process));
-		if(a == 0 || a == 1){
+		if(a == 0 || a == 1 || a == 2){
 		switch(a) {
 			case 0: 
 				// sort ready queue by arrival time
@@ -125,7 +125,7 @@ void simulate(p_list *process_list, p_avgs *averages) {
 				break;
 			case 2:  
 				qsort(queue, n, sizeof(process), compare_process_by_arrival);
-				simulate_rr(queue);
+				simulate_rr(queue, &averages[a]);
 				// simulate_rr(queue);
 				break;
 		}
@@ -134,7 +134,7 @@ void simulate(p_list *process_list, p_avgs *averages) {
 		n = N;
 		free(queue);
 	}
-	print_stats(averages, SIMULATORS);
+	//print_stats(averages, SIMULATORS);
 
 	printf("simulate(): end simulate\n");
 }
@@ -147,7 +147,6 @@ void simulate_fcfs(process *pl, p_avgs *averages) {
 	int time = 0;
 	int ready = 0;
 	int total_procs = 0;
-	int total_cs = 0;
 	int i;
 
 	char previd = ' ';
@@ -170,7 +169,7 @@ void simulate_fcfs(process *pl, p_avgs *averages) {
 
 		// context switch(starting process)
 		time += t_cs/2;
-		total_cs++;
+		averages->total_cs++;
 
 		// track wait time
 		p.wait_time = (time - p.arrival_time);
@@ -229,8 +228,7 @@ void simulate_fcfs(process *pl, p_avgs *averages) {
 	printf("time %dms: Simulator ended for %s\n", time, FCFS);
 
 	// print statistics for the simulator
-	calculate_stats(total_procs, N, queue, pl, averages);
-	averages->total_cs = total_cs;
+	calculate_stats(N, queue, pl, averages);
 	averages->preemptions = 0;
 
 	// clean up	
@@ -242,7 +240,6 @@ void simulate_sjf(process *pl, p_avgs *averages) {
 	int time = 0;
 	int ready = 0;
 	int total_procs = 0;
-	int total_cs = 0;
 
 	char previd = ' ';
 
@@ -250,7 +247,7 @@ void simulate_sjf(process *pl, p_avgs *averages) {
 	memcpy(queue, pl, n*sizeof(process));
 
 
-	printf("time %dms: Simulator started for %s [Q empty]\n", time, SJF);
+	printf("\ntime %dms: Simulator started for %s [Q empty]\n", time, SJF);
 
 	while(n != 0) {	
 
@@ -269,7 +266,7 @@ void simulate_sjf(process *pl, p_avgs *averages) {
 
 		// context switch(starting process)
 		time += t_cs/2;
-		total_cs++;
+		averages->total_cs++;
 
 		// track wait time
 		p.wait_time = (time - p.arrival_time);
@@ -330,31 +327,34 @@ void simulate_sjf(process *pl, p_avgs *averages) {
 	printf("time %dms: Simulator ended for %s\n", time, SJF);
 	
 	// print statistics for the simulator
-	calculate_stats(total_procs, N, queue, pl, averages);
-	averages->total_cs = total_cs;
+	calculate_stats(N, queue, pl, averages);
 	averages->preemptions = 0;
 
 	// cleaup
 	free(queue);
 }
 
-void simulate_rr(process *pl) {
+void simulate_rr(process *pl, p_avgs *averages) {
 	int time = 0;
-	int i = 0;
+	int ready = 0;
+	int total_procs = 0;
+
+	char previd = ' ';
 
 	process *queue = (process *)calloc(n, sizeof(process));
 	memcpy(queue, pl, n*sizeof(process));
 
-	int ready = 0;
 
 	bool just_ended = false;
 
-	printf("time %dms: Simulator started for %s [Q empty]\n", time, FCFS);
+	printf("\ntime %dms: Simulator started for %s [Q empty]\n", time, RR);
 
 	while(n != 0) {	
 		check_process_arrived(time, queue, &ready);
 
 		process p = queue[0];
+
+		bool started = false;
 
 		bool no_preemp = true;
 		
@@ -365,16 +365,24 @@ void simulate_rr(process *pl) {
 
 		// context switch(starting process)
 		time += t_cs/2;
+		averages->total_cs++;
 
 		// track wait time
-		p.wait_time += (time - p.arrival_time);
+		p.wait_time = (time - p.arrival_time);
+		queue[0].wait_time += p.wait_time - t_cs/2;
+		if(p.process_id == previd)
+			queue[0].wait_time -= t_cs/2; 
 
+		// record turnaround time
+		queue[0].turnaround_time += time + queue[0].cpu_burst_time - queue[0].arrival_time;
+		total_procs+= 1;
 
+		check_process_arrived(time, queue, &ready);
 		// check if process has any more bursts
 		// if no, remove from queue,
 		// if yes, stick onto end of queue.
 		while(no_preemp) {
-			check_process_arrived(time, queue, &ready);
+			//printf("t %dms: %c %d no_preemp = %d\n remaining time %dms\n", time, queue[0].process_id, queue[0].in_io, no_preemp, queue[0].remaining_time);	
 			if(queue[0].remaining_time - t_slice <= 0) {
 				// printf("before: proc %c; %dms\n", queue[0].process_id, queue[0].remaining_time);
 				queue[0].num_bursts -= 1;
@@ -394,7 +402,8 @@ void simulate_rr(process *pl) {
 				}
 
 				// start process
-				print_op(time, p, "scpu", queue, ready);
+				if(!started)
+					print_op(time, p, "scpu", queue, ready);
 				
 				time += rem;				
 
@@ -404,7 +413,11 @@ void simulate_rr(process *pl) {
 					print_op(time, p, "end", queue, ready);
 					if(n != 0){
 						just_ended = true;
-						print_op(time + t_cs, queue[0], "scpu", queue, ready-1);
+						// if(ready > 0 && !queue[0].in_io) {
+						// 	print_op(time + t_cs, queue[0], "scpu", queue, ready-1);
+						// } else if (!queue[0].in_io) {
+						// 	print_op(time + t_cs, queue[0], "scpu", queue, ready);
+						// }
 					}
 				} else {
 
@@ -418,19 +431,31 @@ void simulate_rr(process *pl) {
 				}
 				check_process_arrived(time, queue, &ready);
 			} else {
-				queue[0].in_io = false;
+				//printf("%c, ready:%d justended: %d\n", queue[0].process_id, ready, just_ended);
+				check_process_arrived(time, queue, &ready);
+
+				//queue[0].in_io = false;
+				// if(queue[0].process_id == 'D')
+				// 	printf("time %dms: %c\n arrival time: %dms\n time remaining: %dms\n", time, queue[0].process_id, queue[0].arrival_time, queue[0].remaining_time);
 				queue[0].remaining_time -= t_slice;
 				p.remaining_time -= t_slice;
 				queue[0].arrival_time = time + t_slice;
 
+				// if(queue[0].process_id == 'D')
+				// 	printf("time %dms: %c\n arrival time: %dms\n", time, queue[0].process_id, queue[0].arrival_time);
+
 				qsort(queue, n, sizeof(process), compare_process_by_arrival);
-
-				if(time + t_slice != queue[0].arrival_time && !just_ended)
+				// if(queue[0].process_id == 'D')
+				// 	printf("time %dms: %c\n arrival time: %dms\n", time, queue[0].process_id, queue[0].arrival_time);
+				if(time + t_slice >= queue[0].arrival_time && !just_ended && !started) {
 					print_op(time, p, "scpu", queue, ready-1);
-				else if(time + t_slice != queue[0].arrival_time && just_ended)
+					started = true;
+				}
+				else if(time + t_slice >= queue[0].arrival_time && just_ended) {
+					print_op(time, p, "scpu", queue, ready-1);
+					started = true;
 					just_ended = false;
-
-
+				}
 
 				time = time + t_slice;
 				if(ready != 0)
@@ -440,9 +465,11 @@ void simulate_rr(process *pl) {
 
 				if(time == queue[0].arrival_time) {
 					print_op(time, p, "nprmp", queue, ready-1);
+					started = true;
 					continue;
 				} else {
 					print_op(time, p, "prmp", queue, ready);
+					averages->preemptions++;
 				}
 			}
 			no_preemp = false;
@@ -453,9 +480,11 @@ void simulate_rr(process *pl) {
 		time += t_cs/2;
 
 		check_process_arrived(time, queue, &ready);
-		i++;
-
+		previd = p.process_id;
 	}
+	// calculate statistics for the simulator
+	calculate_stats(N, queue, pl, averages);
+
 	free(queue);
 	printf("time %dms: Simulator ended for %s\n", time, RR);
 }
@@ -463,6 +492,7 @@ void simulate_rr(process *pl) {
 void check_process_arrived(int time, process *queue, int *ready) {
 	int i;
 	for(i = 0; i < n; i++) {
+		// printf("%d\n", in_array(queue[i], queue, *ready));
 		if(queue[i].arrival_time <= time && !in_array(queue[i], queue, *ready)) {
 			// printf("time %dms: Process %c ARRIVED: %d\n", time, queue[i].process_id, queue[i].arrived);
 			*ready += 1;
@@ -523,10 +553,10 @@ void print_stats(p_avgs *averages, int sims) {
 				printf("Algorithm %s\n", FCFS);
 				break;
 			case 1:
-				printf("%s\n", SJF);
+				printf("Algorithm %s\n", SJF);
 				break;
 			case 2:
-				printf("%s\n", RR);
+				printf("Algorithm %s\n", RR);
 				break;
 		}
 

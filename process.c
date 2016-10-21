@@ -16,12 +16,14 @@ void print_process(process p) {
 	printf("%c|%d|%d|%d|%d\n", p.process_id, p.arrival_time, p.cpu_burst_time, p.num_bursts, p.io_time);
 }
 
-void calculate_stats(int total_procs, int N, process *queue, process *pl, p_avgs *averages) {
+void calculate_stats(int N, process *queue, process *pl, p_avgs *averages) {
 	int i = 0;
+	int total_procs = 0;
 	int total_cpu_burst_time = 0;
 	int total_wait_time = 0;
 	int total_turnaround_time = 0;
 	for(i = 0; i < N; i++) {
+		total_procs += pl[i].num_bursts;
 		total_cpu_burst_time += pl[i].cpu_burst_time * pl[i].num_bursts;
 		total_turnaround_time += queue[i].turnaround_time;
 		total_wait_time += queue[i].wait_time;

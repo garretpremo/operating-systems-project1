@@ -36,7 +36,7 @@ void print_process_list(process *pl, int size);
 
 void print_process(process p);
 
-void calculate_stats(int total_procs, int N, process *queue, process *pl, p_avgs *averages);
+void calculate_stats(int N, process *queue, process *pl, p_avgs *averages);
 
 void queue_tostr(process *p, char *str, int size);
 
