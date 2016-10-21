@@ -341,8 +341,6 @@ void simulate_rr(process *pl, p_avgs *averages) {
 	int ready = 0;
 	int total_procs = 0;
 
-	char previd = ' ';
-
 	process *queue = (process *)calloc(n, sizeof(process));
 	memcpy(queue, pl, n*sizeof(process));
 
@@ -371,9 +369,7 @@ void simulate_rr(process *pl, p_avgs *averages) {
 
 		// track wait time
 		p.wait_time = (time - p.arrival_time);
-		queue[0].wait_time += p.wait_time - t_cs/2;
-		if(p.process_id == previd)
-			queue[0].wait_time -= t_cs/2; 
+		queue[0].wait_time += p.wait_time - t_cs;
 
 		// record turnaround time
 		// queue[0].turnaround_time += time + queue[0].cpu_burst_time - queue[0].arrival_time;
@@ -391,6 +387,7 @@ void simulate_rr(process *pl, p_avgs *averages) {
 				p.num_bursts -= 1;
 				int rem = queue[0].remaining_time;
 				queue[0].turnaround_time += time + rem - queue[0].arrival_time;
+				queue[0].wait_time -= t_cs;
 				if(ready != 0)
 					ready -= 1;
 				if(queue[0].num_bursts > 0) {
@@ -488,7 +485,6 @@ void simulate_rr(process *pl, p_avgs *averages) {
 		time += t_cs/2;
 
 		check_process_arrived(time, queue, &ready);
-		previd = p.process_id;
 	}
 	// calculate statistics for the simulator
 	calculate_stats(N, queue, pl, averages);
