@@ -76,7 +76,7 @@ int compare_process_by_burst (const void * a, const void * b) {
 		return -1;
 	}
 	else if((*(process*)a).arrived == false) {
-		if((*(process*)a).arrival_time < (*(process*)b).arrival_time) {
+		if((*(process*)a).arrival_time <= (*(process*)b).arrival_time) {
 			return -1;
 		}
 		else if ((*(process*)a).arrival_time > (*(process*)b).arrival_time) {

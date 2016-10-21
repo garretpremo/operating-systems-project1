@@ -548,7 +548,7 @@ void check_process_arrived_sjf(int time, process *queue, int *ready) {
 				print_op(tmp.arrival_time, tmp, "fio", queue, *ready);
 			}
 		} else {
-			break;
+			
 		}
 	}
 }
